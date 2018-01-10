@@ -10,7 +10,7 @@ def norm(arr):
             norm_val += m.pow(arr[i][j], 2)
     return m.sqrt(norm_val)
 
-img = Image.open("test_images/IMG_1956.jpg")  # .convert('LA')
+img = Image.open("test_images/test.jpg")  # .convert('LA')
 img = img.resize((256, 256))
 
 img_arr = np.array(img, "int64")
@@ -69,7 +69,8 @@ grads = [[reds_grad_x, reds_grad_y, reds_grad],
 
 norms = [norm(reds_grad), norm(greens_grad), norm(blues_grad)]
 max_grad = grads[norms.index(max(norms))]
-weights = np.zeros(np.shape(max_grad[0]))
+Image.fromarray(max_grad[0]).show()
+weights = np.zeros(np.shape(max_grad[2]))
 
 # taking arc-tangent of the sum of magnitudes of each cell to solve for angle then convert to degrees in the
 # range 0 < x < 180, if denominator of magnitude is 0, take the arc-tangent of the magnitude - though should check this,
