@@ -15,10 +15,6 @@ img = img.resize((256, 256))
 
 img_arr = np.array(img, "int64")
 
-width, height = img.size
-
-print(width, height)
-
 # FOR B&W IMAGES
 """
 print("width: ", len(img_arr))

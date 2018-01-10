@@ -34,32 +34,23 @@ def show_image(image):
     img.show()
 
 
-def gradient(image, ch=None, bw=True):
+def gradient(image):
     """
     :param image: Image array data
     :param ch: for color arrays
     :param bw: whether the photo is black and white or color True = b&w, False = color
     :return: gradients for x/y
     """
-    if ch is not None:
-        x = np.zeros(image[0].shape)
-        x[:, 1:-1] = -image[:, :-2][ch] + image[:, 2:][ch]
-        x[:, 0] = -image[:, 0][ch] + image[:, 1][ch]
-        x[:, -1] = -image[:, -2][ch] + image[:, -1][ch]
+    x = np.zeros(image.shape)
+    x[:, 1:-1] = -image[:, :-2] + image[:, 2:]
+    x[:, 0] = -image[:, 0] + image[:, 1]
+    x[:, -1] = -image[:, -2] + image[:, -1]
 
-        y = np.zeros(image[0].shape)
-        y[1:-1, :] = -image[:-2, :][ch] + image[2:, :][ch]
-        y[0, :] = -image[0, :][ch] + image[1, :][ch]
-        y[-1, :] = -image[-2, :][ch] + image[-1, :][ch]
-    else:
-        x = np.zeros(image.shape)
-        x[:, 1:-1] = -image[:, :-2] + image[:, 2:]
-        x[:, 0] = -image[:, 0] + image[:, 1]
-        x[:, -1] = -image[:, -2] + image[:, -1]
-        y = np.zeros(image.shape)
-        y[1:-1, :] = -image[:-2, :] + image[2:, :]
-        y[0, :] = -image[0, :] + image[1, :]
-        y[-1, :] = -image[-2, :] + image[-1, :]
+    y = np.zeros(image.shape)
+    y[1:-1, :] = -image[:-2, :] + image[2:, :]
+    y[0, :] = -image[0, :] + image[1, :]
+    y[-1, :] = -image[-2, :] + image[-1, :]
+
     return x, y
 
 
@@ -86,27 +77,25 @@ def max_gradient(image, bw=True):
     if bw is True:
         x, y = gradient(image)
         return grad_magnitude(x, y)  # return the gradient's magnitude
+
     else:
-        bw = True
-        r, g, b = Image.fromarray(image).split()
-        rx, ry = gradient(r, 0, bw)
-        gx, gy = gradient(g, 1, bw)
-        bx, by = gradient(b, 2, bw)
+        r, g, b = Image.fromarray(image).split()  # split the channels so we can work with each individually
+        rx, ry = gradient(np.array(r))
+        gx, gy = gradient(np.array(g))
+        bx, by = gradient(np.array(b))
 
         # calculate the magnitude of rgb arrays
         r_mag = grad_magnitude(rx, ry)
         g_mag = grad_magnitude(gx, gy)
         b_mag = grad_magnitude(bx, by)
-        Image.fromarray(r_mag.astype('uint8')).show()
+
         grads = [r_mag, g_mag, b_mag]
         norms = [np.linalg.norm(grads[x]) for x in range(len(grads))]
-
         max_val = grads[norms.index(max(norms))]
         return max_val
 
 
-image = load_image("test_images/test.jpg", resize_shape=(256, 256), bw=False)
-max_grad = max_gradient(image, bw=False)
-print(max_grad.shape)
+image = load_image("test_images/test.jpg", resize_shape=(256, 256), bw=True)
+max_grad = max_gradient(image, bw=True)
 max_grad = np.array(max_grad).astype('uint8')
-# show_image(max_grad)
+show_image(max_grad)
