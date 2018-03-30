@@ -3,11 +3,13 @@ from PIL import Image
 from skimage import filters
 from skimage import io
 
+from PIL import Image
 
-def load_image(filename, resize_shape):
+def load_image(filename, resize_shape, bw=True):
     """
     :param filename: image takes the form of width, height
     :param resize_shape: shape to resize the image to
+    :param bw: whether the photo is black and white or color True = b&w, False = color
     :return: numpy array created by the image
 
     Takes image file, converts it to B&W, and then re-sizes if applicable.
@@ -15,8 +17,8 @@ def load_image(filename, resize_shape):
 
     img = Image.open(filename).convert('L')
     if resize_shape is not None:
-        img = img.resize(resize_shape)
-    img = np.array(img)
+        img = np.array(Image.fromarray(img).resize(resize_shape))
+
     return img
 
 
@@ -29,11 +31,22 @@ def show_image(image):
     # Image.fromarray(image).show()
 
 
-def gradient(img):
+def gradient(image):
     """
-    :param img: takes in numpy array of image to calculate the gradient of
-    :return: tuple containing gradients in both x and y directions
+    :param image: Image array data
+    :param ch: for color arrays
+    :param bw: whether the photo is black and white or color True = b&w, False = color
+    :return: gradients for x/y
     """
+    x = np.zeros(image.shape)
+    x[:, 1:-1] = -image[:, :-2] + image[:, 2:]
+    x[:, 0] = -image[:, 0] + image[:, 1]
+    x[:, -1] = -image[:, -2] + image[:, -1]
+
+    y = np.zeros(image.shape)
+    y[1:-1, :] = -image[:-2, :] + image[2:, :]
+    y[0, :] = -image[0, :] + image[1, :]
+    y[-1, :] = -image[-2, :] + image[-1, :]
 
 """
 def gradient(image, ch):
@@ -75,9 +88,10 @@ def grad_magnitude(x, y):
     return val
 
 
-def max_gradient(image):
+def max_gradient(image, bw=True):
     """
     :param image: numpy array of a color image
+    :param bw: whether the photo is black and white or color True = b&w, False = color
     :return: tuple of gradients
 
     Gradient of image is computed using the filter [-1, 0, 1] (centered kernel)
@@ -104,8 +118,7 @@ def get_thetas(image):
 
     return image
 
-
-image = load_image("test_images/test.jpg", resize_shape=(256, 256))
-image = gradient(image)
-show_image(image)
-thetas = get_thetas(image)
+image = load_image("test_images/test.jpg", resize_shape=(256, 256), bw=True)
+max_grad = max_gradient(image, bw=True)
+max_grad = np.array(max_grad).astype('uint8')
+show_image(max_grad)
