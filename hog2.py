@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
-import math as m
+from skimage import filters
+from skimage import io
 
 
 def load_image(filename, resize_shape):
@@ -12,7 +13,7 @@ def load_image(filename, resize_shape):
     Takes image file, converts it to B&W, and then re-sizes if applicable.
     """
 
-    img = Image.open(filename)
+    img = Image.open(filename).convert('L')
     if resize_shape is not None:
         img = img.resize(resize_shape)
     img = np.array(img)
@@ -23,21 +24,45 @@ def show_image(image):
     """
     :param image: takes in numpy array of image to display
     """
-    Image.fromarray(image).show()
+    io.imshow(image)
+    io.show()
+    # Image.fromarray(image).show()
 
 
+def gradient(img):
+    """
+    :param img: takes in numpy array of image to calculate the gradient of
+    :return: tuple containing gradients in both x and y directions
+    """
+
+"""
 def gradient(image, ch):
-    x = np.zeros(image[ch].shape)
-    x[:, 1:-1] = -image[ch][:, :-2] + image[ch][:, 2:]
-    x[:, 0] = -image[ch][:, 0] + image[ch][:, 1]
-    x[:, -1] = -image[ch][:, -2] + image[ch][:, -1]
+    # x = np.zeros(image[ch].shape)
+    # x[:, 1:-1] = -image[ch][:, :-2] + image[ch][:, 2:]
+    # x[:, 0] = -image[ch][:, 0] + image[ch][:, 1]
+    # x[:, -1] = -image[ch][:, -2] + image[ch][:, -1]
+    #
+    # y = np.zeros(image[ch].shape)
+    # y[1:-1, :] = -image[ch][:-2, :] + image[ch][2:, :]
+    # y[0, :] = -image[ch][0, :] + image[ch][1, :]
+    # y[-1, :] = -image[ch][-2, :] + image[ch][-1, :]
 
-    y = np.zeros(image[ch].shape)
-    y[1:-1, :] = -image[ch][:-2, :] + image[ch][2:, :]
-    y[0, :] = -image[ch][0, :] + image[ch][1, :]
-    y[-1, :] = -image[ch][-2, :] + image[ch][-1, :]
+    x = np.zeros(len(image[0]))
+    y = np.zeros(len(image[0][0]))
 
+    for i in range(len(image[0])):
+        for j in range(len(image[0][0])):
+            y[i] = x[i] = image[i][j][ch]
+
+    x[:, 1:-1] = -x[:, :-2] + x[:, 2:]
+    x[:, 0] = -x[:, 0] + x[:, 1]
+    x[:, -1] = -x[:, -2] + x[:, -1]
+
+    y[1:-1, :] = -y[:-2, :] + y[2:, :]
+    y[0, :] = -y[0, :] + y[1, :]
+    y[-1, :] = -y[-2, :] + y[-1, :]
     return x, y
+"""
 
 
 def grad_magnitude(x, y):
@@ -75,7 +100,12 @@ def max_gradient(image):
     return max_val
 
 
+def get_thetas(image):
+
+    return image
+
+
 image = load_image("test_images/test.jpg", resize_shape=(256, 256))
+image = gradient(image)
 show_image(image)
-max_grad = max_gradient(image)
-show_image(max_grad)
+thetas = get_thetas(image)
