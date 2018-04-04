@@ -44,11 +44,12 @@ def gradient(img):
     To account for edge cases - however, we want to clip 
     the edges as the gradient cannot be calculated using 
     the 1-D centered filter
-    x[:, 0] = -image[:, 0] + image[:, 1]
-    x[:, -1] = -image[:, -2] + image[:, -1]
-    y[0, :] = -image[0, :] + image[1, :]
-    y[-1, :] = -image[-2, :] + image[-1, :]
     """
+    x[:, 0] = img[:, 1] - img[:, 0]
+    x[:, -1] = img[:, -1] - img[:, -2]
+    y[0, :] = img[1, :] - img[0, :]
+    y[-1, :] = img[-1, :] - img[-2, :]
+
     # x, y = filters.sobel_h(img), filters.sobel_v(img) # if you want to use 3x3 kernel
     return x, y
 
@@ -73,12 +74,30 @@ def get_windows(img, step_size, window_size):
     for y in range(0, i_h - (i_h % w_h), step_size):
         for x in range(0, i_l - (i_l % w_l), step_size):
             # yield the current window
-            window = image[y:y + w_h, x:x + w_l]
+            window = img[y:y + w_h, x:x + w_l]
             # print("window size error x", window.shape)
             yield (x, y, window)
 
 
-def calculate_orientation(g, o, step_size, cell_size, num_bins):
+def interpolate_orientation(o):
+    i_o = np.zeros(o.shape)
+    return i_o
+
+
+def interpolate(g):
+    i_g = np.zeros(g.shape)
+    return i_g
+
+
+def normalize(h):
+    e = .1
+    n_hog = np.zeros(h.shape, dtype=float)
+    for cell in range(len(h)):
+        n_hog[cell] = h[cell]/np.sqrt(np.linalg.norm(h[cell])**2 + e**2)
+    return n_hog
+
+
+def calculate_histogram(g, o, step_size, cell_size, num_bins, _normalize=False, flatten=False):
     """
     :param g: gradient array
     :param o: gradient direction array
@@ -86,17 +105,23 @@ def calculate_orientation(g, o, step_size, cell_size, num_bins):
     :param cell_size: size of the cells
     :param num_bins: number of bins per cell
     :return: 2-D array of histograms per cell
+    :param flatten: Whether the output array will be flattened or not
+    :param _normalize: Whether the output array will be normalized or not
     """
+
     windows = get_windows(g, step_size, cell_size)
     cells = []
     c_i = 0  # set cell index to 0
 
     # retrieve generator from get_windows
     for (x, y, window) in windows:
-        if window.shape[0] != cell_size[0] or window.shape[1] != cell_size[1]:
+        if window.shape[0] != cell_size[0]:
             print("window size error x", (window.shape[1], cell_size[1]))
+            continue
+        elif window.shape[1] != cell_size[1]:
             print("window size error y", (window.shape[0], cell_size[0]))
             continue
+
         h = np.zeros(num_bins)
         cy, cx = int(y + cell_size[1]), int(x + cell_size[0]/2)
         # t_0 is theta sub naught or the direction of the center pixel of the cell
@@ -106,20 +131,30 @@ def calculate_orientation(g, o, step_size, cell_size, num_bins):
             h[b_i] = np.sum(window[b])
         cells.insert(c_i, h)
         c_i += 1  # increment cell index
-    return np.asarray(cells)
+
+    hist = np.asarray(cells)
+    if _normalize:
+        hist = normalize(hist)
+    elif flatten:
+        hist = hist.flatten()
+    return hist
 
 
-# def normalization():
+# plot the histogram
+def show_histogram(cells):
+    plt.hist(cells, align='mid')
+    plt.plot()
+    plt.show()
 
-image = load_image(filename="test_images/test.jpg", resize_shape=(256, 256))
 
-dx, dy = gradient(image)
-grad = grad_magnitude(dx, dy)
-orientation = (np.arctan2(dy, dx) * 180/np.pi) % 360
+def histogram(file):
+    image = load_image(filename=file, resize_shape=(256, 256))
+    dx, dy = gradient(image)
+    grad = grad_magnitude(dx, dy)
+    orientation = (np.arctan2(dy, dx) * 180/np.pi) % 360
+    hog = calculate_histogram(g=grad, o=orientation, step_size=5, cell_size=(10, 10),
+                              num_bins=16, _normalize=True, flatten=False)
+    return hog
 
-arr = calculate_orientation(g=grad, o=orientation, step_size=5, cell_size=(10, 10), num_bins=16)
-arr = arr.flatten()
-# for lel in arr:
-#     if np.asarray(lel).any() != 0:
-#         print(lel)
-# show_image(image)
+
+show_histogram(histogram("test_images/color_gradient.jpg"))
