@@ -64,7 +64,7 @@ def grad_magnitude(x, y):
     return np.sqrt(x**2 + y**2)
 
 
-def get_windows(img, step_size, window_size):
+def get_blocks(img, step_size, window_size):
     w_h = window_size[1]
     w_l = window_size[0]
     i_h = img.shape[1]
@@ -77,6 +77,20 @@ def get_windows(img, step_size, window_size):
             window = img[y:y + w_h, x:x + w_l]
             # print("window size error x", window.shape)
             yield (x, y, window)
+
+
+def get_block_hist(block, cell_size, step_size):
+    w_h = cell_size[1]
+    w_l = cell_size[0]
+    i_h = block.shape[1]
+    i_l = block.shape[0]
+    b = []
+    # slide a window across the image
+    for y in range(0, i_h - (i_h % w_h), step_size):
+        for x in range(0, i_l - (i_l % w_l), step_size):
+            # return list of cells
+            cell = block[y:y + w_h, x:x + w_l]
+            b.append(cell)
 
 
 def interpolate_orientation(o):
@@ -97,32 +111,33 @@ def normalize(h):
     return n_hog
 
 
-def calculate_histogram(g, o, step_size, cell_size, num_bins, _normalize=False, flatten=False):
+def calculate_histogram(g, o, step_size, block_size, cell_size, num_bins, _normalize=False, flatten=False):
     """
     :param g: gradient array
     :param o: gradient direction array
     :param step_size: step size for the window
+    :param block_size: size of image window containing cells
     :param cell_size: size of the cells
     :param num_bins: number of bins per cell
     :return: 2-D array of histograms per cell
     :param flatten: Whether the output array will be flattened or not
     :param _normalize: Whether the output array will be normalized or not
     """
-
-    windows = get_windows(g, step_size, cell_size)
-    cells = []
-    c_i = 0  # set cell index to 0
-
     # retrieve generator from get_windows
+    windows = get_blocks(g, step_size, block_size)
+    blocks = []
+    b_i = 0  # set block index to 0
+
     for (x, y, window) in windows:
-        if window.shape[0] != cell_size[0]:
+        # handles edge cases
+        if window.shape[0] != block_size[0]:
             print("window size error x", (window.shape[1], cell_size[1]))
             continue
-        elif window.shape[1] != cell_size[1]:
+        elif window.shape[1] != block_size[1]:
             print("window size error y", (window.shape[0], cell_size[0]))
             continue
-
         h = np.zeros(num_bins)
+        for c in range()
         cy, cx = int(y + cell_size[1]), int(x + cell_size[0]/2)
         # t_0 is theta sub naught or the direction of the center pixel of the cell
         t_0 = o[cy, cx]
@@ -152,7 +167,7 @@ def histogram(file):
     dx, dy = gradient(image)
     grad = grad_magnitude(dx, dy)
     orientation = (np.arctan2(dy, dx) * 180/np.pi) % 360
-    hog = calculate_histogram(g=grad, o=orientation, step_size=5, cell_size=(10, 10),
+    hog = calculate_histogram(g=grad, o=orientation, step_size=5, block_size=(),cell_size=(10, 10),
                               num_bins=16, _normalize=True, flatten=False)
     return hog
 
