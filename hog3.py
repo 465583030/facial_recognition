@@ -64,33 +64,41 @@ def grad_magnitude(x, y):
     return np.sqrt(x**2 + y**2)
 
 
-def get_blocks(img, step_size, window_size):
-    w_h = window_size[1]
-    w_l = window_size[0]
-    i_h = img.shape[1]
-    i_l = img.shape[0]
+def get_blocks(g, o, step_size, window_size):
+    w_h, w_l= window_size[1], window_size[0]
+    i_h, i_l= g.shape[1], g.shape[0]
 
     # slide a window across the image
     for y in range(0, i_h - (i_h % w_h), step_size):
         for x in range(0, i_l - (i_l % w_l), step_size):
             # yield the current window
-            window = img[y:y + w_h, x:x + w_l]
+            window = g[y:y + w_h, x:x + w_l]
+            theta = o[y:y + w_h, x:x + w_l]
             # print("window size error x", window.shape)
-            yield (x, y, window)
+            yield (x, y, window, theta)
 
 
-def get_block_hist(block, cell_size, step_size):
-    w_h = cell_size[1]
-    w_l = cell_size[0]
-    i_h = block.shape[1]
-    i_l = block.shape[0]
+def get_block_hist(block, theta, cell_size, step_size, num_bins):
+    c_h, c_l = cell_size[1], cell_size[0]
+    b_h, b_l = block.shape[1], block.shape[0]
     b = []
     # slide a window across the image
-    for y in range(0, i_h - (i_h % w_h), step_size):
-        for x in range(0, i_l - (i_l % w_l), step_size):
+    for y in range(0, b_h - (b_h % c_h), step_size):
+        for x in range(0, b_l - (b_l % c_l), step_size):
             # return list of cells
-            cell = block[y:y + w_h, x:x + w_l]
+            cell = block[y:y + c_h, x:x + c_l]
             b.append(cell)
+
+    # define cell center
+    cy, cx = int(cell_size[1]), int(cell_size[0] / 2)
+
+    # t_0 is theta sub naught or the direction of the center pixel of the cell
+    for cell in block:
+        t_0 = cell[cy, cx]
+        for b_i in np.arange(num_bins):
+            l = (cell > (b_i * t_0 - t_0 / 2)) & (cell < (b_i * t_0 + t_0 / 2))
+            cell[b_i] = np.sum(cell[b])
+    cells.insert(c_i, h)
 
 
 def interpolate_orientation(o):
@@ -126,9 +134,8 @@ def calculate_histogram(g, o, step_size, block_size, cell_size, num_bins, _norma
     # retrieve generator from get_windows
     windows = get_blocks(g, step_size, block_size)
     blocks = []
-    b_i = 0  # set block index to 0
 
-    for (x, y, window) in windows:
+    for (x, y, window, theta) in windows:
         # handles edge cases
         if window.shape[0] != block_size[0]:
             print("window size error x", (window.shape[1], cell_size[1]))
