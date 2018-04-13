@@ -61,44 +61,67 @@ def grad_magnitude(x, y):
     :return: float value of gradient's magnitude
     """
     # calculate magnitude given dx and dy
-    return np.sqrt(x**2 + y**2)
+    return np.sqrt(x ** 2 + y ** 2)
 
 
-def get_blocks(g, o, step_size, window_size):
-    w_h, w_l= window_size[1], window_size[0]
-    i_h, i_l= g.shape[1], g.shape[0]
+def get_blocks(g, o, step_size, block_size, cell_size, num_bins, _normalize=False, flatten=False):
+    c_h, c_l = cell_size[1], cell_size[0]
+    b_h, b_l = block_size[1] * c_h, block_size[0] * c_l
+    i_h, i_l = g.shape[1], g.shape[0]
 
     # slide a window across the image
-    for y in range(0, i_h - (i_h % w_h), step_size):
-        for x in range(0, i_l - (i_l % w_l), step_size):
-            # yield the current window
-            window = g[y:y + w_h, x:x + w_l]
-            theta = o[y:y + w_h, x:x + w_l]
-            # print("window size error x", window.shape)
-            yield (x, y, window, theta)
+    for y in range(0, i_h - (i_h % b_h), b_h):
+        for x in range(0, i_l - (i_l % b_l), b_l):
+            # yield the current block
+            gb = g[y:y + b_h, x:x + b_l]
+            ob = o[y:y + b_h, x:x + b_l]
+            block_hists = get_block_hists(block=gb, theta=ob, cell_size=cell_size, step_size=step_size,
+                                          num_bins=num_bins, _normalize=_normalize, flatten=flatten)
+            yield block_hists
 
 
-def get_block_hist(block, theta, cell_size, step_size, num_bins):
+def get_block_hists(block, theta, cell_size, step_size, num_bins, _normalize=False, flatten=False):
     c_h, c_l = cell_size[1], cell_size[0]
     b_h, b_l = block.shape[1], block.shape[0]
-    b = []
+    cells = []
+    thetas = []
+
     # slide a window across the image
     for y in range(0, b_h - (b_h % c_h), step_size):
         for x in range(0, b_l - (b_l % c_l), step_size):
             # return list of cells
-            cell = block[y:y + c_h, x:x + c_l]
-            b.append(cell)
+            cg = block[y:y + c_h, x:x + c_l]
+            cells.append(cg)
+            co = theta[y:y + c_h, x:x + c_l]
+            thetas.append(co)
 
     # define cell center
-    cy, cx = int(cell_size[1]), int(cell_size[0] / 2)
+    cells = np.asarray(cells)
+    thetas = np.asarray(thetas)
+    cy, cx = int(cell_size[1] / 2), int(cell_size[0] / 2)
+
+    b_hists = []
 
     # t_0 is theta sub naught or the direction of the center pixel of the cell
-    for cell in block:
-        t_0 = cell[cy, cx]
-        for b_i in np.arange(num_bins):
-            l = (cell > (b_i * t_0 - t_0 / 2)) & (cell < (b_i * t_0 + t_0 / 2))
-            cell[b_i] = np.sum(cell[b])
-    cells.insert(c_i, h)
+    for x in range(cells.size):
+        t_0 = (x + 1) * 360/num_bins
+        # t_0 = theta[cy, cx]
+        c = np.zeros(num_bins)
+        for b in np.arange(num_bins):
+            val = (cells[x] > (b * t_0 - t_0 / 2)) & (cells[x] < (b * t_0 + t_0 / 2))
+            c[b] += np.sum(cells[x][val]) / cells[x].size
+            if b is not 0:
+                c[b-1] += np.sin(b+1)*t_0*np.sum()
+            if b is not cells.size:
+                c[b+1] +=
+        b_hists.append(c)
+
+    b_hists = np.asarray(b_hists)
+    if _normalize:
+        b_hists = normalize(b_hists)
+    if flatten:
+        b_hists = b_hists.flatten()
+    return b_hists
 
 
 def interpolate_orientation(o):
@@ -112,10 +135,10 @@ def interpolate(g):
 
 
 def normalize(h):
-    e = .1
+    e = .001
     n_hog = np.zeros(h.shape, dtype=float)
     for cell in range(len(h)):
-        n_hog[cell] = h[cell]/np.sqrt(np.linalg.norm(h[cell])**2 + e**2)
+        n_hog[cell] = h[cell] / np.sqrt(np.linalg.norm(h[cell]) ** 2 + e ** 2)
     return n_hog
 
 
@@ -131,39 +154,18 @@ def calculate_histogram(g, o, step_size, block_size, cell_size, num_bins, _norma
     :param flatten: Whether the output array will be flattened or not
     :param _normalize: Whether the output array will be normalized or not
     """
+
     # retrieve generator from get_windows
-    windows = get_blocks(g, step_size, block_size)
-    blocks = []
-
-    for (x, y, window, theta) in windows:
-        # handles edge cases
-        if window.shape[0] != block_size[0]:
-            print("window size error x", (window.shape[1], cell_size[1]))
-            continue
-        elif window.shape[1] != block_size[1]:
-            print("window size error y", (window.shape[0], cell_size[0]))
-            continue
-        h = np.zeros(num_bins)
-        for c in range()
-        cy, cx = int(y + cell_size[1]), int(x + cell_size[0]/2)
-        # t_0 is theta sub naught or the direction of the center pixel of the cell
-        t_0 = o[cy, cx]
-        for b_i in np.arange(num_bins):
-            b = (window > (b_i * t_0 - t_0/2)) & (window < (b_i * t_0 + t_0/2))
-            h[b_i] = np.sum(window[b])
-        cells.insert(c_i, h)
-        c_i += 1  # increment cell index
-
-    hist = np.asarray(cells)
-    if _normalize:
-        hist = normalize(hist)
-    elif flatten:
-        hist = hist.flatten()
-    return hist
+    blocks = get_blocks(g, o, step_size, block_size, cell_size, num_bins, _normalize=_normalize, flatten=flatten)
+    h = []
+    for block in blocks:
+        h.append(block)
+    h = np.array(h)
+    return h
 
 
 # plot the histogram
-def show_histogram(cells):
+def show(cells):
     plt.hist(cells, align='mid')
     plt.plot()
     plt.show()
@@ -173,10 +175,10 @@ def histogram(file):
     image = load_image(filename=file, resize_shape=(256, 256))
     dx, dy = gradient(image)
     grad = grad_magnitude(dx, dy)
-    orientation = (np.arctan2(dy, dx) * 180/np.pi) % 360
-    hog = calculate_histogram(g=grad, o=orientation, step_size=5, block_size=(),cell_size=(10, 10),
-                              num_bins=16, _normalize=True, flatten=False)
+    orientation = (np.arctan2(dy, dx) * 180 / np.pi) % 360
+    hog = calculate_histogram(g=grad, o=orientation, step_size=5, block_size=(3, 3), cell_size=(10, 10),
+                              num_bins=16, _normalize=True, flatten=True)
     return hog
 
 
-show_histogram(histogram("test_images/color_gradient.jpg"))
+hist = histogram("test_images/color_gradient.jpg")
