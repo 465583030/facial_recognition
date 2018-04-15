@@ -26,7 +26,6 @@ def show_image(img):
     """
     io.imshow(img)
     io.show()
-    # Image.fromarray(image).show()
 
 
 def gradient(img):
@@ -68,7 +67,7 @@ def get_blocks(g, o, step_size, block_size, cell_size, num_bins, _normalize=Fals
     c_h, c_l = cell_size[1], cell_size[0]
     b_h, b_l = block_size[1] * c_h, block_size[0] * c_l
     i_h, i_l = g.shape[1], g.shape[0]
-
+    blocks = []
     # slide a window across the image
     for y in range(0, i_h - (i_h % b_h), b_h):
         for x in range(0, i_l - (i_l % b_l), b_l):
@@ -77,7 +76,9 @@ def get_blocks(g, o, step_size, block_size, cell_size, num_bins, _normalize=Fals
             ob = o[y:y + b_h, x:x + b_l]
             block_hists = get_block_hists(block=gb, theta=ob, cell_size=cell_size, step_size=step_size,
                                           num_bins=num_bins, _normalize=_normalize, flatten=flatten)
-            yield block_hists
+            blocks.append(block_hists)
+
+    return blocks
 
 
 def get_block_hists(block, theta, cell_size, step_size, num_bins, _normalize=False, flatten=False):
@@ -108,12 +109,12 @@ def get_block_hists(block, theta, cell_size, step_size, num_bins, _normalize=Fal
         # t_0 = theta[cy, cx]
         c = np.zeros(num_bins)
         for b in np.arange(num_bins):
-            val = (cells[x] > (b * t_0 - t_0 / 2)) & (cells[x] < (b * t_0 + t_0 / 2))
+            val = (thetas[x] > (b * t_0 - t_0 / 2)) & (thetas[x] < (b * t_0 + t_0 / 2))
             c[b] += np.sum(cells[x][val]) / cells[x].size
+            val = not val
             if b is not 0:
                 c[b-1] += np.sin(b+1)*t_0*np.sum()
             if b is not cells.size:
-                c[b+1] +=
         b_hists.append(c)
 
     b_hists = np.asarray(b_hists)
@@ -156,12 +157,7 @@ def calculate_histogram(g, o, step_size, block_size, cell_size, num_bins, _norma
     """
 
     # retrieve generator from get_windows
-    blocks = get_blocks(g, o, step_size, block_size, cell_size, num_bins, _normalize=_normalize, flatten=flatten)
-    h = []
-    for block in blocks:
-        h.append(block)
-    h = np.array(h)
-    return h
+    return get_blocks(g, o, step_size, block_size, cell_size, num_bins, _normalize=_normalize, flatten=flatten)
 
 
 # plot the histogram
