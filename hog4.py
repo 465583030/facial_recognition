@@ -3,6 +3,7 @@ from PIL import Image
 
 
 class HOG:
+
     """
         img: image to calculate hog for
         img_shape: shape of the image
@@ -24,22 +25,24 @@ class HOG:
     gy = None
     g = None
     o = None
-    img_shape = (256, 256)
+    img_shape = (128, 128)
     o_range = 360
     block_size = (3, 3)  # in cells
     step_size = 5  # in pixels
-    cell_size = (10, 10)  # in pixels
-    num_bins = 16
-    _normalize = False
+    cell_size = (8, 8)  # in pixels
+    num_bins = 8
+    _normalize = True
     flatten = False
+    histogram = None
 
     def hog(self, file):
         self.img = self.load_image(filename=file, resize_shape=self.img_shape)
         self.gx, self.gy = self.gradient(self.img)
         self.g = self.grad_magnitude(self.gy, self.gx)
         self.o = (np.arctan2(self.gy, self.gx) * 180 / np.pi) % self.o_range
-        hog = self.calculate_histograms()
-        return hog
+        histogram = self.calculate_histograms()
+        self.histogram = histogram
+        return self.histogram
 
     def calculate_histograms(self):
         c_h, c_l = self.cell_size[1], self.cell_size[0]
@@ -62,23 +65,24 @@ class HOG:
                             t_0 = (b + 1) * 360 / self.num_bins
                             c1 = (oc > (b * t_0 - t_0 / 2)) & (oc < (b * t_0 + t_0 / 2))
                             cell[b] += np.sum(gc[c1]) / gc.size
-                            # c2 = (oc < (b * t_0 - t_0 / 2)) | (oc > (b * t_0 + t_0 / 2))
-                            if b != 0:
-                                cell[b - 1] += ((np.sin((b + 1) * t_0)/np.sin(t_0)) * np.sum(gx[c1])) - \
-                                               ((np.cos((b + 1) * t_0)/np.sin(t_0)) * np.sum(gy[c1]))
-                            if b != cell.size:
-                                cell[b + 1] += ((np.cos(b * t_0) / np.sin(t_0)) * np.sum(gy[c1])) - \
-                                               ((np.sin(b * t_0) / np.sin(t_0)) * np.sum(gx[c1]))
+
+                            if b > 0:
+                                cell[b - 1] += ((np.sin((b + 1) * t_0)/np.sin(t_0)) * np.sum(gx[~c1])) - \
+                                               ((np.cos((b + 1) * t_0)/np.sin(t_0)) * np.sum(gy[~c1]))
+                            if b < (cell.size - 1):
+                                cell[b + 1] += ((np.cos(b * t_0) / np.sin(t_0)) * np.sum(gy[~c1])) - \
+                                               ((np.sin(b * t_0) / np.sin(t_0)) * np.sum(gx[~c1]))
                         block_hist.append(cell)
 
                 block_hist = np.asarray(block_hist)
+
                 if self._normalize:
                     block_hist = self.normalize(block_hist)
                 if self.flatten:
                     block_hist = block_hist.flatten()
 
                 histogram.append(block_hist)
-
+        histogram = np.asarray(histogram)
         return histogram
 
     @staticmethod
