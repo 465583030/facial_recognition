@@ -29,11 +29,10 @@ class HOG:
     o_range = 360
     block_size = (3, 3)  # in cells
     step_size = 5  # in pixels
-    cell_size = (8, 8)  # in pixels
-    num_bins = 8
+    cell_size = (10, 10)  # in pixels
+    num_bins = 16
     _normalize = True
     flatten = False
-    histogram = None
 
     def hog(self, file):
         self.img = self.load_image(filename=file, resize_shape=self.img_shape)
@@ -41,8 +40,7 @@ class HOG:
         self.g = self.grad_magnitude(self.gy, self.gx)
         self.o = (np.arctan2(self.gy, self.gx) * 180 / np.pi) % self.o_range
         histogram = self.calculate_histograms()
-        self.histogram = histogram
-        return self.histogram
+        return histogram
 
     def calculate_histograms(self):
         c_h, c_l = self.cell_size[1], self.cell_size[0]
@@ -87,7 +85,7 @@ class HOG:
 
     @staticmethod
     def normalize(cell_hist):
-        e = .001
+        e = 1e-7
         n_hog = np.zeros(cell_hist.shape, dtype=float)
         for cell in range(len(cell_hist)):
             n_hog[cell] = cell_hist[cell] / np.sqrt(np.linalg.norm(cell_hist[cell]) ** 2 + e ** 2)
