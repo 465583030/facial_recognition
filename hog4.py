@@ -1,5 +1,7 @@
 import numpy as np
 from PIL import Image
+from sklearn.decomposition import PCA
+from matplotlib import pyplot as plt
 
 
 class HOG:
@@ -32,10 +34,20 @@ class HOG:
     cell_size = (10, 10)  # in pixels
     num_bins = 16
     _normalize = True
-    flatten = False
+    flatten = True
 
-    def hog(self, file):
-        self.img = self.load_image(filename=file, resize_shape=self.img_shape)
+    def pca_hog(self, filename):
+        histogram = self.hog(filename=filename)
+        pca = PCA(svd_solver='randomized', n_components=16)
+        pca_histogram = pca.fit_transform(histogram)
+        # plt.plot(np.cumsum(pca.explained_variance_ratio_))
+        # plt.xlabel('Number of Components')
+        # plt.ylabel('Cumulative explained variance')
+        print(pca_histogram.shape)
+        return pca_histogram
+
+    def hog(self, filename):
+        self.img = self.load_image(filename=filename, resize_shape=self.img_shape)
         self.gx, self.gy = self.gradient(self.img)
         self.g = self.grad_magnitude(self.gy, self.gx)
         self.o = (np.arctan2(self.gy, self.gx) * 180 / np.pi) % self.o_range
@@ -83,6 +95,17 @@ class HOG:
         histogram = np.asarray(histogram)
         return histogram
 
+    # def plot_histogram(self, histogram):
+    #     plt.figure(1)
+    #     init = 211
+    #     for hist in histogram:
+    #         freq = np.zeros(hist.shape[0])
+    #         for x in np.arange(freq.size):
+    #             freq[x] = hist[x].size
+    #         plt.subplot(init)
+    #         plt.plot(np.arange(1, self.num_bins + 1),)
+    #         init += 1
+
     @staticmethod
     def normalize(cell_hist):
         e = 1e-7
@@ -123,7 +146,6 @@ class HOG:
         y[0, :] = img[1, :] - img[0, :]
         y[-1, :] = img[-1, :] - img[-2, :]
 
-        # x, y = filters.sobel_h(img), filters.sobel_v(img) # if you want to use 3x3 kernel
         return x, y
 
     @staticmethod
