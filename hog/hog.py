@@ -34,16 +34,15 @@ class HOG:
     cell_size = (10, 10)  # in pixels
     num_bins = 16
     _normalize = True
-    flatten = True
+    flatten = False
 
-    def pca_hog(self, filename):
-        histogram = self.hog(filename=filename)
-        pca = PCA(svd_solver='randomized', n_components=16)
-        pca_histogram = pca.fit_transform(histogram)
+    def pca_hog(hogs):
+        pca = PCA(svd_solver='randomized', n_components=4608)
+        pca_histogram = pca.fit_transform(hogs)
+        # pca_histogram = pca.fit_transform(histogram)
         # plt.plot(np.cumsum(pca.explained_variance_ratio_))
         # plt.xlabel('Number of Components')
         # plt.ylabel('Cumulative explained variance')
-        print(pca_histogram.shape)
         return pca_histogram
 
     def hog(self, filename):
