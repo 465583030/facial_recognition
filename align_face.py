@@ -32,16 +32,16 @@ def align_faces(images):
     aligned_faces = []
 
     for image in images:
-
         dets = detector(image, 1)
         faces = dlib.full_object_detections()
+
         if len(dets) is 0:
             continue
         else:
             for det in dets:
                 faces.append(sp(image, det))
-            aligned_face = dlib.get_face_chip(image, faces[0], size=96)
 
+            aligned_face = dlib.get_face_chip(image, faces[0], size=96)
             aligned_face = cv2.cvtColor(aligned_face, cv2.COLOR_BGR2RGB)
             aligned_faces.append(aligned_face)
     return np.asarray(aligned_faces)

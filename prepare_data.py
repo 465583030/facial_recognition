@@ -10,20 +10,19 @@ from model import create_model
 from align_face import align_faces
 
 
-def save_imgs(imgs):
+def save_imgs(dir_, imgs):
     """
     :param imgs: face images to save
+    :param dir_: parent directory of the original images
     """
     t = time.localtime()
-    dir_name = os.path.dirname(str(t.tm_mon) + '/' +
-                               str(t.tm_mday) + '-' +
-                               str(abs(t.tm_hour - 12)) + ':' +
-                               str(t.tm_min))
+    dir_name = dir_ + str(t.tm_mon) + '-' + str(t.tm_mday) + '_' + str(abs(t.tm_hour - 12)) + '-' + str(t.tm_min)
     if not os.path.exists(dir_name):
+        print(dir_name)
         os.mkdir(dir_name)
 
-    for img, i in imgs, np.arange(len(imgs)):
-        Image.fromarray(img).save(dir_name + '/' + '{}.png'.format(i))
+    for i in np.arange(len(imgs)):
+        Image.fromarray(imgs[i]).save(dir_name + '/' + '{}.png'.format(i))
 
 
 def disp_imgs(imgs):
@@ -37,19 +36,23 @@ def disp_imgs(imgs):
     plt.show()
 
 
-def load_raw_images(dir_):
+def load_raw_images(p_dir, dir_, save_aligned=False):
     """
+    :param p_dir: parent directory
     :param dir_: array or list of image file-names in a targeted directory
+    :param save_aligned: save the aligned faces to a directory
     :return: face embeddings of aligned face(s)
     """
     imgs = []
     for img_dir in dir_:
-        img = cv2.imread(dir_ + img_dir)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.imread(p_dir + img_dir)
         img = cv2.resize(img, (280, 280))
         imgs.append(img)
     imgs = np.asarray(imgs)
-    return get_embeddings(align_faces(imgs))
+    aligned = align_faces(imgs)
+    if save_aligned:
+        save_imgs(p_dir, aligned)
+    return get_embeddings(aligned)
 
 
 def load_serial(dir_, aligned=False):
