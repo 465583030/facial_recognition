@@ -7,9 +7,6 @@ import os
 
 dirs = os.listdir("test/")
 hogs = []
-for d in dirs:
-
-
 
 # test = "test/IMG_1138.jpeg"
 # histogram = h.HOG().hog(test)
