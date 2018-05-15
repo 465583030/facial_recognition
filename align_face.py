@@ -1,6 +1,7 @@
 import dlib
 import cv2
 import numpy as np
+import data_utils as d
 
 
 class Align:
@@ -48,6 +49,9 @@ class Align:
     dir_landmark = "models/landmarks.dat"
 
     def getFaceBoundingBoxes(self, img):
+
+        assert img is not None
+
         detector = dlib.get_frontal_face_detector()
         try:
             return detector(img, 1)
@@ -56,6 +60,9 @@ class Align:
             return []
 
     def getLargestBoundingBox(self, img):
+
+        assert img is not None
+
         faces = self.getFaceBoundingBoxes(img)
         if len(faces) > 0:
             return max(faces, key=lambda rect: rect.width() * rect.height())
@@ -63,13 +70,23 @@ class Align:
             return None
 
     def get_landmarks(self, img, bounding_box):
+
+        assert img is not None
+        assert bounding_box is not None
+
         sp = dlib.shape_predictor(self.dir_landmark)
         landmarks = sp(img, bounding_box)
         # landmarks = self.predictor(img, bounding_box)
         return list(map(lambda p: (p.x, p.y), landmarks.parts()))
 
-    def align(self, img, output_size, landmark_indices=INNER_EYES_AND_BOTTOM_LIP):
+    def align(self, img, output_size=96, landmark_indices=INNER_EYES_AND_BOTTOM_LIP):
+
+        assert img is not None
+
         bounding_box = self.getLargestBoundingBox(img=img)
+        if bounding_box is None:
+            d.show_image(img)
+            return None
         landmarks = np.float32(self.get_landmarks(img=img, bounding_box=bounding_box))
         arr_indices = np.array(landmark_indices)
         temp = cv2.getAffineTransform(landmarks[arr_indices], output_size * self.MINMAX_TEMPLATE[arr_indices])
