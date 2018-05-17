@@ -65,12 +65,11 @@ class Align:
             print("Error: {}".format(e))
             return []
     
-    @staticmethod
-    def get_largest_bounding_box(img):
+    def get_largest_bounding_box(self, img):
 
         assert img is not None
 
-        faces = get_bounding_box(img)
+        faces = self.get_bounding_box(img)
         if len(faces) > 0:
             return max(faces, key=lambda rect: rect.width() * rect.height())
         else:
@@ -155,6 +154,18 @@ def disp_imgs(imgs):
     plt.show()
 
 
+def load_image(dir_, aligned_size=96):
+    align = Align()
+    img = cv2.imread(dir_)
+    img = cv2.resize(img, (500, 500))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = align.align(img, output_size=aligned_size)
+    if img is None:
+        return None
+    else:
+        return img
+
+
 def load_raw_images(p_dir, aligned_size=96, save_aligned=False):
     """
     :param p_dir: parent directory
@@ -207,7 +218,6 @@ def get_embeddings(aligned_imgs):
     assert aligned_imgs is not None
 
     embeddings = np.zeros((len(aligned_imgs), 128))
-
     nn = create_model()
     nn.load_weights('weights/nn4.small2.v1.h5')
     for i in np.arange(len(embeddings)):

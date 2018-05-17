@@ -4,8 +4,7 @@ from urllib.request import urlopen
 from model import create_model
 from keras.models import Model
 from keras.layers import Input
-from triplet_generator import triplet_generator
-import TripletLossLayer as Tl
+from misc import triplet_generator, TripletLossLayer as Tl
 import pickle
 
 
@@ -49,6 +48,6 @@ emb_n = nn4_small2(in_n)
 triplet_loss_layer = Tl.TripletLossLayer(alpha=0.2, name='triplet_loss_layer')([emb_a, emb_p, emb_n])
 nn4_small2_train = Model([in_a, in_p, in_n], triplet_loss_layer)
 
-generator = triplet_generator()
+generator = triplet_generator.triplet_generator()
 nn4_small2_train.compile(loss=None, optimizer='Adam')
 nn4_small2_train.fit_generator(generator, epochs=20, steps_per_epoch=100)

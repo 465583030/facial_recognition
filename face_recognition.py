@@ -9,7 +9,7 @@ def load_model(filename):
 
 
 def get_face(emb):
-    clf = load_model('knn_face1')
+    clf = load_model('knn_face')
     names = np.array(['Shreyas', 'Mazin', 'Nithin', 'Kunal'])
     emb = emb.reshape(1, -1)
     pred = names[clf.predict(emb)]
